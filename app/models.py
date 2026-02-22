@@ -3,7 +3,7 @@ SQLite models for passkey auth: User and WebAuthnCredential.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -109,6 +109,24 @@ class SensorReading(db.Model):
     air_temp: Mapped[float | None] = mapped_column(nullable=True)  # F
     pcb_temp: Mapped[float | None] = mapped_column(nullable=True)  # F
     light_percentage: Mapped[float | None] = mapped_column(nullable=True)  # 0-100
+
+
+# Sow dates: plant name + date planted (user-editable)
+class SowDate(db.Model):
+    __tablename__ = "sow_dates"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    plant_name: Mapped[str] = mapped_column(nullable=False)
+    sow_date: Mapped[date] = mapped_column(nullable=False)  # date planted
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "plant_name": self.plant_name,
+            "sow_date": self.sow_date.isoformat(),
+            "created_at": self.created_at.isoformat() + ("Z" if self.created_at.tzinfo is None else ""),
+        }
 
 
 # Pump on/off events (manual or rule)

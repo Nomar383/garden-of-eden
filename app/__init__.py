@@ -19,6 +19,7 @@ from .settings.routes import settings_blueprint
 from .plant_of_the_day.routes import plant_of_the_day_blueprint
 from .history.routes import history_blueprint
 from .backup.routes import backup_blueprint
+from .sow_dates.routes import sow_dates_blueprint
 
 
 def _migrate_app_settings_slack(app):
@@ -138,6 +139,7 @@ def create_app(config_name):
     app.register_blueprint(plant_of_the_day_blueprint, url_prefix='/plant-of-the-day')
     app.register_blueprint(history_blueprint, url_prefix='/history')
     app.register_blueprint(backup_blueprint, url_prefix='/backup')
+    app.register_blueprint(sow_dates_blueprint, url_prefix='/sow-dates')
 
     # @app.teardown_appcontext
     # def shutdown_session(exception=None):
