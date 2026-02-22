@@ -49,6 +49,7 @@ def export_snapshot(app: "Flask") -> dict:
             User,
             WebAuthnCredential,
             AppSettings,
+            SowDate,
             SensorReading,
             PumpEvent,
         )
@@ -86,6 +87,13 @@ def export_snapshot(app: "Flask") -> dict:
         # App settings (single row id=1)
         row = AppSettings.query.get(1)
         data["app_settings"] = [row.to_dict()] if row else []
+
+        # Sow dates
+        sow_rows = SowDate.query.order_by(SowDate.id.asc()).all()
+        data["sow_dates"] = [
+            {"id": r.id, "plant_name": r.plant_name, "sow_date": r.sow_date.isoformat(), "created_at": _serialize_dt(r.created_at)}
+            for r in sow_rows
+        ]
 
         # Sensor readings
         readings = SensorReading.query.order_by(SensorReading.id.asc()).all()
@@ -153,6 +161,7 @@ def import_snapshot(app: "Flask", snapshot: dict) -> None:
             User,
             WebAuthnCredential,
             AppSettings,
+            SowDate,
             SensorReading,
             PumpEvent,
         )
@@ -166,6 +175,7 @@ def import_snapshot(app: "Flask", snapshot: dict) -> None:
         # Clear and re-insert in dependency order
         PumpEvent.query.delete()
         SensorReading.query.delete()
+        SowDate.query.delete()
         WebAuthnCredential.query.delete()
         User.query.delete()
         AppSettings.query.delete()
@@ -200,6 +210,17 @@ def import_snapshot(app: "Flask", snapshot: dict) -> None:
             kwargs = {k: v for k, v in row.items()}
             kwargs["id"] = 1
             s = AppSettings(**kwargs)
+            db.session.add(s)
+        db.session.commit()
+
+        # Sow dates
+        for row in data.get("sow_dates", []):
+            s = SowDate(
+                id=row["id"],
+                plant_name=row["plant_name"],
+                sow_date=datetime.fromisoformat(row["sow_date"]).date() if isinstance(row["sow_date"], str) else row["sow_date"],
+                created_at=_deserialize_dt(row.get("created_at")) or datetime.utcnow(),
+            )
             db.session.add(s)
         db.session.commit()
 
@@ -260,7 +281,7 @@ def import_snapshot(app: "Flask", snapshot: dict) -> None:
 
         # Reset SQLite sequences so new rows get ids after restored max id
         from sqlalchemy import text
-        for table, col in [("users", "id"), ("webauthn_credentials", "id"), ("sensor_readings", "id"), ("pump_events", "id")]:
+        for table, col in [("users", "id"), ("webauthn_credentials", "id"), ("sow_dates", "id"), ("sensor_readings", "id"), ("pump_events", "id")]:
             try:
                 r = db.session.execute(text(f"SELECT COALESCE(MAX({col}), 0) FROM {table}"))
                 max_id = r.scalar() or 0

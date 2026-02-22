@@ -35,6 +35,7 @@ def audit_snapshot(app: "Flask", snapshot: dict) -> dict:
             User,
             WebAuthnCredential,
             AppSettings,
+            SowDate,
             SensorReading,
             PumpEvent,
         )
@@ -95,6 +96,17 @@ def audit_snapshot(app: "Flask", snapshot: dict) -> dict:
         settings_match = _seq_match(local_settings, remote_settings) or (len(local_settings) == 0 and len(remote_settings) == 0)
         details["app_settings"] = {"local_count": len(local_settings), "remote_count": len(remote_settings), "match": settings_match}
         if not settings_match:
+            all_ok = False
+
+        # Sow dates
+        local_sow = [
+            {"id": r.id, "plant_name": r.plant_name, "sow_date": r.sow_date.isoformat(), "created_at": _serialize_dt(r.created_at)}
+            for r in SowDate.query.order_by(SowDate.id).all()
+        ]
+        remote_sow = data.get("sow_dates", [])
+        sow_match = _seq_match(local_sow, remote_sow)
+        details["sow_dates"] = {"local_count": len(local_sow), "remote_count": len(remote_sow), "match": sow_match}
+        if not sow_match:
             all_ok = False
 
         # Sensor readings
