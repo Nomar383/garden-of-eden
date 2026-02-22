@@ -4,7 +4,7 @@ The Garden of Eden backend can back up its SQLite database and JSON file state t
 
 ## Environment
 
-- **MONGODB_URL** (required for backup/restore): Full MongoDB connection string, including database name. Example: `mongodb://user:pass@host:27017/gardyn_backup`. The app uses the database from the URL and a single collection named `backup`.
+- **MONGODB_URL** (required for backup/restore): Full MongoDB connection string, including database name. Example: `mongodb://user:pass@host:27017/gardyn_backup`. The app uses the database from the URL and a single collection named `gardyn-backup`.
 
 ## Authentication
 

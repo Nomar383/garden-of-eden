@@ -1,13 +1,13 @@
 """
 MongoDB connection and backup document access.
-Uses MONGODB_URL env (database name is in the URL; we use collection 'backup').
+Uses MONGODB_URL env (database name is in the URL; we use collection 'gardyn-backup').
 """
 import logging
 import os
 
 logger = logging.getLogger(__name__)
 
-COLLECTION_NAME = "backup"
+COLLECTION_NAME = "gardyn-backup"
 DOC_ID = "latest"
 
 _client = None
