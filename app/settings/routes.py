@@ -31,6 +31,7 @@ DEFAULTS = {
     "slack_cooldown_minutes": 15,
     "slack_notifications_enabled": True,
     "slack_runtime_errors_enabled": False,
+    "plant_of_the_day_slack_enabled": True,
     "plant_of_the_day_slack_time": "09:35",
 }
 
@@ -102,7 +103,7 @@ def update_settings():
             setattr(row, key, _float(body[key], getattr(row, key)))
     # Booleans
     for key in ("water_level_alerts_enabled", "humidity_alerts_enabled", "air_temp_alerts_enabled", "pcb_temp_alerts_enabled",
-                "slack_notifications_enabled", "slack_runtime_errors_enabled"):
+                "slack_notifications_enabled", "slack_runtime_errors_enabled", "plant_of_the_day_slack_enabled"):
         if key in body:
             setattr(row, key, _bool(body[key], getattr(row, key)))
     # Slack: webhook URL (string, empty string = use env)
