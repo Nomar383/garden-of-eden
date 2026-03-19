@@ -86,6 +86,8 @@ def send_plant_of_the_day_slack(app):
         row = _get_or_create()
         if not getattr(row, "slack_notifications_enabled", True):
             return
+        if not getattr(row, "plant_of_the_day_slack_enabled", True):
+            return
     plant = store.get_current_plant(app)
     if not plant:
         logger.debug("No plant of the day to send to Slack.")

@@ -36,6 +36,7 @@ def _migrate_app_settings_slack(app):
             ("slack_cooldown_minutes", "INTEGER NOT NULL DEFAULT 15"),
             ("slack_notifications_enabled", "INTEGER NOT NULL DEFAULT 1"),
             ("slack_runtime_errors_enabled", "INTEGER NOT NULL DEFAULT 0"),
+            ("plant_of_the_day_slack_enabled", "INTEGER NOT NULL DEFAULT 1"),
             ("plant_of_the_day_slack_time", "TEXT NOT NULL DEFAULT '09:35'"),
         ]:
             if col not in cols:
