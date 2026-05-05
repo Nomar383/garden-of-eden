@@ -22,13 +22,9 @@ Work in progress. We should be picking up some steam here to give the DYI commun
   - [Table of Contents](#table-of-contents)
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
-    - [Run on startup (Raspberry Pi)](#run-on-startup-raspberry-pi)
   - [Usage](#usage)
     - [MQTT with Home Assistant](#mqtt-with-homeassistant)
     - [Testing](#testing)
-    - [REST API](#rest-api)
-      - [Dashboard deployment and passkey auth](#dashboard-deployment-and-passkey-auth)
-      - [Postman](#postman)
     - [Quick Toggle Guide](#quick-toggle-guide)
   - [Hardware Overview](#hardware-overview)
   - [Design Decisions](#design-decisions)
@@ -69,102 +65,29 @@ sudo systemctl status pigpiod
 sudo systemctl status mqtt.service
 ```
 
-### Run on startup (Raspberry Pi)
-
-To have the API (venv + `run.py`) start automatically on boot on a Raspberry Pi Zero 2W (or any Pi), use **systemd**.
-
-1. **Edit the service file**  
-   Copy the example unit file and set your project path and user:
-   ```bash
-   sudo cp docs/garden-of-eden.service /etc/systemd/system/
-   sudo nano /etc/systemd/system/garden-of-eden.service
-   ```
-   Update `User=` and the paths in `WorkingDirectory=` and `ExecStart=` if your repo is not under `/home/pi/garden-of-eden` (e.g. use `/home/gardyn/projects/garden-of-eden` and `User=gardyn` if that matches your setup).
-
-2. **Enable and start the service**
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable garden-of-eden
-   sudo systemctl start garden-of-eden
-   ```
-
-3. **Check status and logs**
-   ```bash
-   sudo systemctl status garden-of-eden
-   journalctl -u garden-of-eden -f
-   ```
-
-The service runs after the network is up (`network-online.target`), restarts on failure, and logs to the system journal.
-
 ## Usage
 
 ### MQTT with Home Assistant
 
 For broker setup, Home Assistant integration, and local testing, see **[docs/MQTT.md](docs/MQTT.md)**.
 
+The MQTT service (`mqtt.py`) is the sole entry point for this project. It connects to an MQTT broker, publishes Home Assistant discovery messages for auto-configuration, and handles all sensor reading, light/pump control, and camera image publishing over MQTT.
+
 ### Testing
 
 Activate python venv `source venv/bin/activate`
 
-Start the Flask REST API `python run.py`
-
-Test options:
-
 ```bash
-# REST endpoints
-./bin/api-test.sh
-
-# unit test
+# unit tests
 python -m unittest -v
 
 # individual tests
 python tests/test_distance.py
 ```
 
-### REST API
-
-Activate the venv and run the server only if you didn’t set up the [Run on startup](#run-on-startup-raspberry-pi) service earlier — if you did, the API is already running.
-
-```bash
-source venv/bin/activate
-python run.py
-```
-
-The API listens on `0.0.0.0:5000` and prints the Pi IP. It exposes sensors (distance, humidity, temperature, PCB temp), light and pump control, camera snapshots and saved photos, and schedule rules.
-
-**API reference for developers:** Full endpoint documentation — request/response shapes, status codes, and examples — is in [docs/REST-API.md](docs/REST-API.md). Use that when building a frontend or any API client.
-
-**HTTPS setup:** Step-by-step guide for exposing the API over HTTPS (e.g. from outside your network): [docs/HTTPS-Setup.md](docs/HTTPS-Setup.md).
-
-#### Dashboard deployment and passkey auth
-
-The **API** runs on the Pi (e.g. `https://your-ddns-hostname:8444`). The **dashboard** (frontend) can be deployed elsewhere — for example Netlify — so users open the dashboard at a different URL (e.g. `https://your-app.netlify.app`), and the dashboard calls your API over the network.
-
-When passkey auth is enabled, the Pi must know the **dashboard’s** origin (where the user is when they sign in). You can use a single pair or support **both local and deployed** at once:
-
-| Where the dashboard runs | Set on the **Pi** `.env` |
-|--------------------------|---------------------------|
-| **Local dev** (e.g. Vite at `http://localhost:5173`) | `WEBAUTHN_RP_ID_LOCAL=localhost` and `WEBAUTHN_ORIGIN_LOCAL=http://localhost:5173` |
-| **Deployed** (e.g. Netlify `https://your-app.netlify.app`) | `WEBAUTHN_RP_ID_PROD=your-app.netlify.app` and `WEBAUTHN_ORIGIN_PROD=https://your-app.netlify.app` |
-
-- **ENVIRONMENT** = `local`, `prod`, or `both`. Use `both` (or leave unset when both pairs are set) so the server accepts requests from either origin — local and deployed dashboards work at the same time. Use `local` or `prod` to force a single pair.
-- **WEBAUTHN_RP_ID_LOCAL** / **WEBAUTHN_ORIGIN_LOCAL** = hostname and full origin for the local dashboard (no port in RP ID).
-- **WEBAUTHN_RP_ID_PROD** / **WEBAUTHN_ORIGIN_PROD** = hostname and full origin for the deployed dashboard.
-- **WEBAUTHN_RP_ID** and **WEBAUTHN_ORIGIN** = legacy single pair; used when ENVIRONMENT is set or as fallback.
-- **ALLOWED_EMAILS** = optional comma-separated list of email addresses that may register a passkey. When set, only those addresses can create an account (e.g. limit access to your household or family). If unset, a single default user is used. See `.env-dist` for the variable name; attempted registrations from non-allowed emails are refused with a friendly message and logged to a file.
-- **ALLOW_NEW_USERS** = when `false`, registration is disabled: the dashboard should hide the "create passkey" UI and show "We're not accepting new users at this time." Login remains available. The frontend can call `GET /auth/config` to get `allow_new_users` and adjust the UI.
-
-The API URL stays the same (e.g. `https://your-pi-hostname:8444`). In Netlify (or your host), set the build env var **VITE_GARDYN_API_URL** to that API URL so the dashboard knows where to send requests.
-
-> **Note:** If `run.py` errors with `AttributeError: module 'dotenv' has no attribute 'find_dotenv'`, run `pip uninstall python-dotenv` and try again.
-
-#### Postman
-
-Export this [Postman collection](https://www.postman.com/orange-shadow-8689/workspace/garden-of-eden/collection/8244324-e9d8f79e-d3f2-423e-b0d1-a4ca5b1b08ca?action=share&creator=8244324&active-environment=8244324-861384b4-b4e3-48a3-8da1-181705bd2d8c), add to your private workspace, add the `pi-ip` env variable and you should be good to go.
-
 ### Quick Toggle Guide
 
-You can use the physical button to control lights and pump during app development when the API or dashboard are not available.
+You can use the physical button to control lights and pump.
 
 > Ensure your press is quick and within the time frame for the action to register correctly. The press time window can be modified directly in the `mqtt.py` file.
 
@@ -198,72 +121,51 @@ Using `gpiozero` to leverage `pigpio` daemon which is hardware driven and more e
 
 ```text
 garden-of-eden/
-├── run.py
 ├── config.py
 ├── mqtt.py
 ├── requirements.txt
 ├── app/
-│   ├── __init__.py
-│   ├── models.py
-│   ├── lib/
-│   │   ├── __init__.py
-│   │   └── lib.py
-│   ├── auth/
-│   │   ├── __init__.py
-│   │   ├── middleware.py
-│   │   └── routes.py
-│   ├── schedules/
-│   │   ├── __init__.py
-│   │   ├── routes.py
-│   │   ├── scheduler.py
-│   │   └── store.py
 │   └── sensors/
 │       ├── __init__.py
 │       ├── temp_humidity_shared.py
 │       ├── camera/
 │       │   ├── __init__.py
-│       │   ├── camera.py
-│       │   └── routes.py
+│       │   └── camera.py
 │       ├── distance/
 │       │   ├── __init__.py
-│       │   ├── distance.py
-│       │   └── routes.py
+│       │   └── distance.py
 │       ├── humidity/
 │       │   ├── __init__.py
-│       │   ├── humidity.py
-│       │   └── routes.py
+│       │   └── humidity.py
 │       ├── light/
 │       │   ├── __init__.py
-│       │   ├── light.py
-│       │   └── routes.py
+│       │   └── light.py
 │       ├── pcb_temp/
 │       │   ├── __init__.py
 │       │   ├── pcb_temp.py
-│       │   ├── over_temp_monitor.py
-│       │   └── routes.py
+│       │   └── over_temp_monitor.py
 │       ├── pump/
 │       │   ├── __init__.py
 │       │   ├── pump.py
-│       │   ├── pump_power.py
-│       │   └── routes.py
+│       │   └── pump_power.py
 │       └── temperature/
 │           ├── __init__.py
-│           ├── temperature.py
-│           └── routes.py
+│           └── temperature.py
 ├── bin/
 │   ├── setup.sh
-│   ├── api-test.sh
 │   ├── get-sensor-data.sh
-│   └── ...
+│   ├── light.sh
+│   ├── water.sh
+│   ├── show-mqtt-logs.sh
+│   └── take-pictures.sh
 ├── docs/
-│   ├── REST-API.md
-│   ├── HTTPS-Setup.md
-│   ├── garden-of-eden.service
+│   ├── MQTT.md
+│   ├── Hardware-Overview.md
 │   └── ...
 ├── services/
+├── automations/
 └── tests/
     ├── __init__.py
-    ├── test_api.py
     ├── test_distance.py
     ├── test_light.py
     └── test_pump.py
