@@ -234,6 +234,7 @@ function enable_pigpiod_service {
 # Setup and start MQTT service
 function setup_mqtt_service {
     local service_file="$INSTALL_DIR/services/etc/systemd/system/mqtt.service"
+    mkdir -p "$(dirname "$service_file")"
 
     cat > $service_file <<EOF
 [Unit]
