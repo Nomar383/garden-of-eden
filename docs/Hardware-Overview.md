@@ -42,8 +42,8 @@ When you run `sudo i2cdetect -y 1`, you should see something like:
 
 LED full-spectrum lights.
 
-- **Method:** PWM duty cycle, 8 kHz frequency.
-- **Pin:** [GPIO-18 | PIN-12](https://pinout.xyz/pinout/pin12_gpio18/).
+- **Method:** Hardware PWM duty cycle, 25 kHz frequency (above audible range to prevent coil whine). Uses `pigpio.hardware_PWM()` directly — software PWM is capped at 8 kHz with the default pigpiod sample rate.
+- **Pin:** [GPIO-18 | PIN-12](https://pinout.xyz/pinout/pin12_gpio18/) (hardware PWM0 capable).
 
 ---
 
