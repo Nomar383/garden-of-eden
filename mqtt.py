@@ -74,11 +74,11 @@ def toggle_light():
     if light_state:
         logger.info("Toggling Light ON")
         light.set_duty_cycle(brightness)
-        client.publish(BASE_TOPIC + "/light/state", "ON")
+        client.publish(BASE_TOPIC + "/light/state", "ON", retain=True)
     else:
         logger.info("Toggling Light OFF")
         light.off()
-        client.publish(BASE_TOPIC + "/light/state", "OFF")
+        client.publish(BASE_TOPIC + "/light/state", "OFF", retain=True)
 
 def toggle_pump():
     global pump_state
@@ -86,11 +86,11 @@ def toggle_pump():
     if pump_state:
         logger.info("Toggling Pump ON")
         pump.set_speed(speed)
-        client.publish(BASE_TOPIC + "/pump/state", "ON")
+        client.publish(BASE_TOPIC + "/pump/state", "ON", retain=True)
     else:
         logger.info("Toggling Pump OFF")
         pump.off()
-        client.publish(BASE_TOPIC + "/pump/state", "OFF")
+        client.publish(BASE_TOPIC + "/pump/state", "OFF", retain=True)
 
 def handle_button_press():
     global press_count, double_press_timer
@@ -357,6 +357,10 @@ def on_connect(client, userdata, flags, rc, properties=None):
     # client.subscribe(BASE_TOPIC + "/light/brightness/set")
     send_discovery_messages(client)
     publish_water_low_mode(client)
+    # Publish actual hardware state on (re)connect so mqtt is always in sync after a reboot/restart
+    client.publish(BASE_TOPIC + "/light/state", "ON" if light.get_brightness() > 0 else "OFF", retain=True)
+    client.publish(BASE_TOPIC + "/light/brightness/state", str(light.get_brightness()), retain=True)
+    client.publish(BASE_TOPIC + "/pump/state", "ON" if pump.get_duty_cycle() > 0 else "OFF", retain=True)
 
 def on_message(client, userdata, msg):
     global brightness, speed, WATER_LOW_CM
@@ -403,15 +407,15 @@ def on_message(client, userdata, msg):
         elif topic_suffix == "light/command":
             if payload.upper() == "ON":
                 light.set_duty_cycle(brightness)
-                client.publish(BASE_TOPIC + "/light/state", "ON")
+                client.publish(BASE_TOPIC + "/light/state", "ON", retain=True)
             elif payload.upper() == "OFF":
                 light.off()
-                client.publish(BASE_TOPIC + "/light/state", "OFF")
+                client.publish(BASE_TOPIC + "/light/state", "OFF", retain=True)
 
         elif topic_suffix == "light/brightness/set" and payload.isdigit():
             brightness = int(payload)
             light.set_duty_cycle(brightness)
-            client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness))
+            client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness), retain=True)
 
         # === Water Level ===
         elif topic_suffix == "water/level/get":
