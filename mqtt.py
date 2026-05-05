@@ -22,7 +22,7 @@ from app.sensors.distance.distance import Distance, MeasurementError
 
 # Configure logging
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("gardyn.log"),  # Log to a file
@@ -31,9 +31,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
-# set to INFO, for to capture mqtt messages at info-level messages.
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 logger.debug("This is a debug message")
 logger.info("This is an info message")
@@ -406,14 +404,17 @@ def on_message(client, userdata, msg):
         # === Light Logic ===
         elif topic_suffix == "light/command":
             if payload.upper() == "ON":
+                logger.info(f"Light command: ON (brightness: {brightness}%)")
                 light.set_duty_cycle(brightness)
                 client.publish(BASE_TOPIC + "/light/state", "ON", retain=True)
             elif payload.upper() == "OFF":
+                logger.info("Light command: OFF")
                 light.off()
                 client.publish(BASE_TOPIC + "/light/state", "OFF", retain=True)
 
         elif topic_suffix == "light/brightness/set" and payload.isdigit():
             brightness = int(payload)
+            logger.info(f"Light brightness set: {brightness}%")
             light.set_duty_cycle(brightness)
             client.publish(BASE_TOPIC + "/light/brightness/state", str(brightness), retain=True)
 
