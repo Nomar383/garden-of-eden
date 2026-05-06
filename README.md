@@ -10,7 +10,7 @@ If you are interested in collaborating please review the [CONTRIBUTORS](CONTRIBU
 
 Work in progress. We should be picking up some steam here to give the DYI community the features you deserve.
 
-[Milestones](https://github.com/abby-lewis/garden-of-eden/milestones)
+[Milestones](https://github.com/Nomar383/garden-of-eden/milestones)
 
 ![image](https://github.com/user-attachments/assets/403248f5-b7d4-4cb1-921a-0458f515f387)
 
@@ -41,7 +41,7 @@ Start with a clean install of Linux. Use the [RaspberryPi Imager](https://www.ra
 
 ```bash
 # clone repo
-git clone git@github.com:abby-lewis/garden-of-eden.git
+git clone git@github.com:Nomar383/garden-of-eden.git
 cd garden-of-eden 
 ```
 
@@ -162,7 +162,6 @@ garden-of-eden/
 │   ├── MQTT.md
 │   ├── Hardware-Overview.md
 │   └── ...
-├── services/
 ├── automations/
 └── tests/
     ├── __init__.py
