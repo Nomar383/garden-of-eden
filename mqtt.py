@@ -355,10 +355,30 @@ def on_connect(client, userdata, flags, rc, properties=None):
     # client.subscribe(BASE_TOPIC + "/light/brightness/set")
     send_discovery_messages(client)
     publish_water_low_mode(client)
-    # Publish actual hardware state on (re)connect so mqtt is always in sync after a reboot/restart
+    # Publish actual hardware state on (re)connect so HA is always in sync after a reboot/restart
     client.publish(BASE_TOPIC + "/light/state", "ON" if light.get_brightness() > 0 else "OFF", retain=True)
     client.publish(BASE_TOPIC + "/light/brightness/state", str(light.get_brightness()), retain=True)
     client.publish(BASE_TOPIC + "/pump/state", "ON" if pump.get_duty_cycle() > 0 else "OFF", retain=True)
+
+    # Publish initial sensor readings so entities are not "unknown" after HA restart
+    try:
+        pcb_temp = get_pcb_temperature()
+        client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}", retain=True)
+    except Exception as e:
+        logger.error(f"Initial PCB temp publish failed: {e}")
+    try:
+        temperature = temperature_sensor.read()
+        client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}", retain=True)
+    except Exception as e:
+        logger.error(f"Initial temperature publish failed: {e}")
+    try:
+        humidity = humidity_sensor.read()
+        client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}", retain=True)
+    except Exception as e:
+        logger.error(f"Initial humidity publish failed: {e}")
+    distance = safe_distance_measure()
+    if distance is not None:
+        client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}", retain=True)
 
 def on_message(client, userdata, msg):
     global brightness, speed, WATER_LOW_CM
@@ -454,7 +474,7 @@ def publish_pcb_temperature(client):
         try:
             pcb_temp = get_pcb_temperature()
             logger.info(f"Publishing PCB Temperature: {pcb_temp:.2f}°C")
-            client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}")
+            client.publish(BASE_TOPIC + "/pcb/temperature", f"{pcb_temp:.2f}", retain=True)
         except Exception as e:
             logger.error(f"Failed to read or publish PCB temperature: {e}")
         sleep(30*60)  # Publish frequency, every x seconds
@@ -464,7 +484,7 @@ def publish_temperature(client):
         try:
             temperature = temperature_sensor.read()
             logger.info(f"Publishing Temperature: {temperature:.2f}°C")
-            client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}")
+            client.publish(BASE_TOPIC + "/temperature", f"{temperature:.2f}", retain=True)
         except Exception as e:
             logger.error(f"Failed to read or publish ambient temperature: {e}")
         sleep(30*60)  # Publish frequency, every x seconds
@@ -474,7 +494,7 @@ def publish_humidity(client):
         try:
             humidity = humidity_sensor.read()
             logger.info(f"Publishing Humidity: {humidity:.2f}%")
-            client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}")
+            client.publish(BASE_TOPIC + "/humidity", f"{humidity:.2f}", retain=True)
         except Exception as e:
             logger.error(f"Failed to read or publish ambient humidity: {e}")
         sleep(30*60)  # Publish frequency, every x seconds
@@ -484,7 +504,7 @@ def publish_water_level(client):
         distance = safe_distance_measure()
         if distance is not None:
             logger.info(f"Publishing Water Level: {distance:.2f}cm")
-            client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}")
+            client.publish(BASE_TOPIC + "/water/level", f"{distance:.2f}", retain=True)
         sleep(30 * 60)
 
 def publish_images(client):
